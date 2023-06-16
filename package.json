@@ -15,7 +15,9 @@
     "react-native": "0.71.8"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0"
+    "@babel/core": "^7.20.0",
+    "@react-native-voice/voice": "^3.2.4",
+    "expo-dev-client": "^2.2.1"
   },
   "private": true
 }
