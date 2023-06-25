@@ -1,11 +1,64 @@
-import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TextInput, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
-import { MagnifyingGlassIcon } from "react-native-heroicons/outline";
+import { MagnifyingGlassIcon, MicrophoneIcon } from "react-native-heroicons/outline";
 import React, { useLayoutEffect, useState, useEffect } from 'react'
 import axios from 'axios';
 import HeadSection from './HeadSection';
+import Voice from '@react-native-voice/voice';
 
-const Home = ({navigation}) => {
+const Home = ({ navigation }) => {
+
+  const [resultVoice, setResult] = useState('')
+  const [isLoading, setLoading] = useState(false)
+
+  const [data, setData] = useState([])
+  const [finaldata, setfinaldata] = useState([]);
+  const [Value, onChangeValue] = useState("");
+
+  useEffect(() => {
+    Voice.onSpeechStart = onSpeechStartHandler;
+    Voice.onSpeechEnd = onSpeechEndHandler;
+    Voice.onSpeechResults = onSpeechResultsHandler;
+
+    return () => {
+      Voice.destroy().then(Voice.removeAllListeners);
+    }
+  }, [])
+
+  const onSpeechStartHandler = (e) => {
+    console.log("start handler==>>>", e)
+  }
+  const onSpeechEndHandler = (e) => {
+    setLoading(false)
+    console.log("stop handler", e)
+  }
+
+  const onSpeechResultsHandler = (e) => {
+    let text = e.value[0]
+
+    onChangetext(text)
+    setResult(text)
+    console.log("speech result handler", e)
+
+  }
+
+  const startRecording = async () => {
+    setLoading(true)
+    try {
+      await Voice.start('en-IN')
+    } catch (error) {
+      console.log("error raised", error)
+    }
+  }
+
+  const stopRecording = async () => {
+    setLoading(false)
+    try {
+      await Voice.stop()
+    } catch (error) {
+      console.log("error raised", error)
+    }
+  }
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -13,9 +66,6 @@ const Home = ({navigation}) => {
     });
   }, [])
 
-  const [data, setData] = useState([])
-  const [finaldata, setfinaldata] = useState([]);
-  const [Value, onChangeValue] = useState("");
 
   function getdata(commodity = "", limit = 2000) {
     let url = 'https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=579b464db66ec23bdd0000019eaed1ae95144f925f630f26665d3a02&format=json';
@@ -61,42 +111,68 @@ const Home = ({navigation}) => {
   useEffect(() => {
     getdata();
   }, [])
-
+  const window = useWindowDimensions();
   return (
-    <SafeAreaView>
-      <HeadSection />
-      <View style={styles.searchconatiner}>
-        <MagnifyingGlassIcon size={20} color="#000" />
-        <TextInput
-          style={styles.input}
-          placeholder='Search Commodity'
-          onChangeText={onChangetext}
-          value={Value}
+    <SafeAreaView style={styles.container}>
+      <View>
+        <HeadSection />
+        <View style={styles.searchconatiner}>
+          <MagnifyingGlassIcon size={20} color="#000" />
+          <TextInput
+            style={styles.input}
+            placeholder='Search Commodity'
+            onChangeText={onChangetext}
+            value={Value}
+          />
+          {isLoading ? <TouchableOpacity
+            style={{
+              alignSelf: 'center',
+              backgroundColor: 'red',
+              padding: 8,
+              borderRadius: 4,
+              height: 35
+            }}
+            onPress={stopRecording}
+          >
+            <Text style={{ color: 'white', fontWeight: 'bold' }}>Stop</Text>
+          </TouchableOpacity>
+
+            :
+
+            <TouchableOpacity
+              onPress={startRecording}
+            >
+              <MicrophoneIcon size={20} color="#000" />
+            </TouchableOpacity>}
+        </View>
+        <Text>Comodity Prices</Text>
+        <Text>{finaldata.length}</Text>
+        <FlatList
+          data={finaldata}
+          renderItem={({ item }) => (
+            <View>
+              <TouchableOpacity onPress={() => navigation.navigate('Details', { commodity: item.commodity })}>
+                <View style={styles.card}>
+                  <Text style={{ fontSize: 15, fontWeight: 'bold' }}>{item.commodity}</Text>
+                  <Text>updated on {item.arrival_date}</Text>
+                  <Text style={{ marginTop: 5 }}>Min Rs.{item.min_price} - Max Rs.{item.max_price}</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
         />
       </View>
-      <Text>Comodity Prices</Text>
-      <Text>{finaldata.length}</Text>
-      <FlatList
-        data={finaldata}
-        renderItem={({ item }) => (
-          <View>
-            <TouchableOpacity onPress={() => navigation.navigate('Details', {commodity: item.commodity})}>
-            <View style={styles.card}>
-              <Text style={{ fontSize: 15, fontWeight: 'bold' }}>{item.commodity}</Text>
-              <Text>updated on {item.arrival_date}</Text>
-              <Text style={{ marginTop: 5 }}>Min Rs.{item.min_price} - Max Rs.{item.max_price}</Text>
-
-            </View>
-            </TouchableOpacity>
-          </View>
-        )}
-      />
 
     </SafeAreaView>
   )
 }
 
 styles = StyleSheet.create({
+  container: {
+    backgroundColor: '#228b22',
+    height: '100%',
+    width: '100%'
+  },
   card: {
     backgroundColor: '#f0faed',
     padding: 10,
