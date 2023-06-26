@@ -8,7 +8,6 @@ import Voice from '@react-native-voice/voice';
 
 const Home = ({ navigation }) => {
 
-  const [resultVoice, setResult] = useState('')
   const [isLoading, setLoading] = useState(false)
 
   const [data, setData] = useState([])
@@ -37,7 +36,6 @@ const Home = ({ navigation }) => {
     let text = e.value[0]
 
     onChangetext(text)
-    setResult(text)
     console.log("speech result handler", e)
 
   }
@@ -97,13 +95,28 @@ const Home = ({ navigation }) => {
 
   function onChangetext(text) {
     onChangeValue(text);
-    if (text) {
-      let result = data.filter((c) => {
-        return c.commodity.toLowerCase().includes(text.toLowerCase());
-      });
-      setfinaldata(result);
-    } else {
-      setfinaldata(data);
+    var keywords = []
+    let s = "";
+    for (let i = 0; i < text.length; i++) {
+      if (text[i] != " ") {
+        s = s + text[i]
+        // console.log(s)
+      }
+      if (text[i] == " " || i == text.length - 1) {
+        keywords.push(s);
+        s = "";
+      }
+    }
+    for (var i = 0; i < keywords.length; i++) {
+      console.log(keywords[i])
+      if (keywords[i]) {
+        let result = data.filter((c) => {
+          return c.commodity.toLowerCase().includes(keywords[i].toLowerCase());
+        });
+        setfinaldata(result);
+      } else {
+        setfinaldata(data);
+      }
     }
 
   }
